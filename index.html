@@ -2,436 +2,400 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>新界西交通特工</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宇豐的表達事件簿</title>
     
-    <!-- 載入 Tailwind CSS (負責排版與美化) -->
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 載入 React 與 ReactDOM -->
+    <!-- 引入 React 和 ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- 載入 Babel (負責翻譯 React JSX 語法) -->
+    <!-- 引入 Babel 用於瀏覽器端編譯 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- 引入 Lucide Icons (SVG 版) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; }
-        @keyframes slide-up {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-3deg); }
+            75% { transform: translateX(5px) rotate(3deg); }
         }
-        .animate-slide-up {
-            animation: slide-up 0.3s ease-out forwards;
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+        .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+        @keyframes fadeInUp { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
         }
-        /* 隱藏滾動條但保持可以滾動 */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-orange-50 text-slate-800 font-sans">
 
-    <!-- React 應用程式的掛載點 -->
     <div id="root"></div>
 
-    <!-- React 程式碼開始 -->
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- 任務資料庫 ---
-        const missionsData = [
+        // --- Icon Components (使用 SVG 替代 lucide-react 以支援單一 HTML) ---
+        const IconBookOpen = () => <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>;
+        const IconStar = ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+        const IconCheckCircle = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+        const IconXCircle = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>;
+        const IconChevronRight = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
+        const IconAward = ({size=80, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>;
+        const IconThumbsUp = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>;
+        const IconRefreshCw = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>;
+
+        // --- 遊戲資料庫 ---
+        const FRAMEWORK_STEPS = [
+          "事件背景",
+          "發生的事情",
+          "我的想法或感受",
+          "我的反應或行為",
+          "結果或學到的東西"
+        ];
+
+        const SCENARIOS = [
           {
-            id: 'm1',
-            title: '任務一：元朗文化探索',
-            destination: '元朗大會堂',
-            icon: '📍',
-            color: 'bg-blue-100 border-blue-400',
-            description: '特工宇豐，我們現在位於學校（天榮路5號）。你的第一個任務是前往「元朗大會堂」。請根據實際環境規劃路線！',
-            questions: [
-              {
-                text: '出發前，我們站在學校門口。要尋找去「元朗大會堂」的最佳路線，你第一步會做什麼？',
-                options: [
-                  { text: '隨便找一個輕鐵站上車', isCorrect: false, feedback: '這樣很容易迷路喔！特工行動前需要有計劃。' },
-                  { text: '打開手機的 Google Map 或 MTR App', isCorrect: true, feedback: '正確！善用科技是交通特工的第一守則。' },
-                  { text: '問路邊的陌生人', isCorrect: false, feedback: '雖然可以問人，但自己學會看地圖會更獨立！' }
-                ],
-                icon: '📱'
-              },
-              {
-                text: '我們走到附近的「翠湖站」，發現這裡的輕鐵 751 線不去元朗。地圖建議我們步行一小段路到旁邊的「天榮站」，在那裡可以搭乘哪條輕鐵線直達元朗？',
-                options: [
-                  { text: '761P', isCorrect: true, feedback: '答對了！761P (天逸往元朗) 是前往元朗最快的選擇。' },
-                  { text: '705', isCorrect: false, feedback: '705 是天水圍循環線，不會去元朗喔。' },
-                  { text: '507', isCorrect: false, feedback: '507 是去屯門的，方向不對。' }
-                ],
-                icon: '🗺️'
-              },
-              {
-                text: '到了「天榮站」月台，為了確保不上錯車，你應該看列車上的什麼資訊？',
-                options: [
-                  { text: '列車的顏色', isCorrect: false, feedback: '輕鐵顏色都差不多，不能靠這個分辨喔。' },
-                  { text: '車頭或車身顯示屏上的「路線號碼」及「終點站 (元朗)」', isCorrect: true, feedback: '觀察力很敏銳！確認號碼和方向才上車是最安全的。' },
-                  { text: '車上有沒有位子坐', isCorrect: false, feedback: '有沒有位子不重要，去對目的地才重要。' }
-                ],
-                icon: '👁️'
-              },
-              {
-                text: '搭乘 761P 進入元朗區後，我們應該在哪一個輕鐵站下車，才會最靠近「元朗大會堂」？',
-                options: [
-                  { text: '坑尾村站', isCorrect: false, feedback: '坑尾村還沒到元朗市中心喔。' },
-                  { text: '豐年路站', isCorrect: true, feedback: '太棒了！「豐年路站」下車走幾步路就到大會堂了。' },
-                  { text: '元朗總站', isCorrect: false, feedback: '元朗總站過頭了，要往回走很久喔。' }
-                ],
-                icon: '🚈'
-              },
-              {
-                text: '在「豐年路站」下車後，地圖顯示大會堂在車站的「南方」。你轉動身體時，要看地圖上的什麼標誌來確認自己面向南方？',
-                options: [
-                  { text: '巴士站牌標誌', isCorrect: false, feedback: '巴士站牌不能告訴我們東南西北。' },
-                  { text: 'GPS 藍點上的「小箭頭」', isCorrect: true, feedback: '方向大師！箭頭指著哪裡，你就是面向哪裡！' },
-                  { text: '餐廳標誌', isCorrect: false, feedback: '餐廳標誌只能告訴你哪裡有東西吃。' }
-                ],
-                icon: '🧭'
-              }
+            title: "🧸 玩具分享事件",
+            sentences: [
+              { text: "在學校小息時，我和朋友在課室裡", stepIndex: 0 },
+              { text: "我看到他拿出一個很酷的新玩具", stepIndex: 1 },
+              { text: "我覺得很好奇，心裡很想和他一起玩", stepIndex: 2 },
+              { text: "我主動走過去問他：「我可以和你一起玩嗎？」", stepIndex: 3 },
+              { text: "我們開心地一起玩，我學會了主動表達自己的想法", stepIndex: 4 }
             ]
           },
           {
-            id: 'm2',
-            title: '任務二：屯門遠征行動',
-            destination: '屯門大會堂',
-            icon: '🛡️',
-            color: 'bg-purple-100 border-purple-400',
-            description: '特工宇豐，這次我們要從學校出發，跨區前往「屯門大會堂」。這是一趟較長的旅程，請謹慎規劃！',
-            questions: [
-              {
-                text: '從學校旁的「翠湖站」出發去屯門，這次不用走到天榮站了！我們可以直接在翠湖站搭乘哪一條輕鐵線？',
-                options: [
-                  { text: '751 (往友愛方向)', isCorrect: true, feedback: '完全正確！751 線可以直接從翠湖站駛向屯門市中心。' },
-                  { text: '706', isCorrect: false, feedback: '706 只在天水圍繞圈圈喔。' },
-                  { text: '761P', isCorrect: false, feedback: '761P 是去元朗的，這次我們要去屯門。' }
-                ],
-                icon: '🚈'
-              },
-              {
-                text: '走進輕鐵站月台，上車前有一個非常重要的「指定動作」必須完成，是什麼？',
-                options: [
-                  { text: '買零食', isCorrect: false, feedback: '車廂內不能飲食喔！' },
-                  { text: '在橙色的八達通機「拍卡入閘」', isCorrect: true, feedback: '守法好公民！記得聽到「嘟」一聲才算成功。' },
-                  { text: '大聲唱歌', isCorrect: false, feedback: '在月台要保持安靜，以免影響他人。' }
-                ],
-                icon: '💳'
-              },
-              {
-                text: '屯門大會堂位於繁華的市中心商場旁邊。搭乘 751 線，你應該在哪個站下車？',
-                options: [
-                  { text: '兆康站', isCorrect: false, feedback: '兆康站還沒到屯門市區喔。' },
-                  { text: '市中心站', isCorrect: true, feedback: '精準定位！市中心站下車是最快的。' },
-                  { text: '屯門碼頭站', isCorrect: false, feedback: '那是終點站，坐過頭太遠啦！' }
-                ],
-                icon: '📍'
-              },
-              {
-                text: '【突發狀況】如果在車上不小心打瞌睡，提早了在「澤豐站」下車，你該怎麼辦？',
-                options: [
-                  { text: '跑出車站亂走', isCorrect: false, feedback: '這樣會迷路的！' },
-                  { text: '保持冷靜，留在同個月台，等下一班車繼續前往市中心', isCorrect: true, feedback: '特工非常冷靜！只要方向正確，等下一班車就可以補救。' },
-                  { text: '馬上搭對面方向的車回家', isCorrect: false, feedback: '任務還沒完成，不要輕易放棄喔。' }
-                ],
-                icon: '⚠️'
-              },
-              {
-                text: '在「市中心站」下車後，附近人多車多。要安全走到大會堂，你應該利用什麼設施？',
-                options: [
-                  { text: '直接跑過馬路', isCorrect: false, feedback: '太危險了！絕對不可以亂過馬路。' },
-                  { text: '看指示牌，使用「行人天橋」安全地走過去', isCorrect: true, feedback: '安全第一！屯門市中心有完善的天橋網絡，跟著指示走最安全。' },
-                  { text: '跟著別人走', isCorrect: false, feedback: '別人的目的地可能跟你不一樣。' }
-                ],
-                icon: '🛡️'
-              }
+            title: "💧 打翻水杯事件",
+            sentences: [
+              { text: "在飯堂吃午餐的時候", stepIndex: 0 },
+              { text: "我不小心打翻了水杯，把桌子弄濕了", stepIndex: 1 },
+              { text: "我覺得很慌張，也有點不好意思", stepIndex: 2 },
+              { text: "我馬上拿紙巾清理，並向旁邊的同學道歉", stepIndex: 3 },
+              { text: "同學原諒了我，我學會了做事要更小心", stepIndex: 4 }
             ]
           },
           {
-            id: 'm3',
-            title: '終極任務：安全撤退 (返家)',
-            destination: '宇豐的家',
-            icon: '🏠',
-            color: 'bg-green-100 border-green-400',
-            description: '放學了！特工宇豐需要從天榮路5號的學校，獨自安全返回家中。這考驗你的應變與溝通能力！',
-            questions: [
-              {
-                text: '離開學校前，為了讓家人能隨時知道你的位置，手機必須開啟什麼功能？',
-                options: [
-                  { text: '藍芽', isCorrect: false, feedback: '藍芽通常是用來連接耳機的。' },
-                  { text: '定位服務 (GPS) 及流動數據 (上網)', isCorrect: true, feedback: '正確！有網絡和 GPS，家人才能在地圖上看到你。' },
-                  { text: '勿擾模式', isCorrect: false, feedback: '開啟勿擾模式可能會漏接家人的電話！' }
-                ],
-                icon: '📱'
-              },
-              {
-                text: '走到車站，發現 App 顯示下一班車因為交通擠塞，需要等 25 分鐘。你該怎麼辦？',
-                options: [
-                  { text: '站在馬路邊一直等', isCorrect: false, feedback: '馬路邊危險且空氣不好。' },
-                  { text: '找個安全的地方耐心等候，或用 App 尋找其他路線', isCorrect: true, feedback: '特工應變能力滿分！確保自身安全並尋找替代方案是最好的做法。' },
-                  { text: '生氣地走路回家', isCorrect: false, feedback: '如果家很遠，走路會很累而且可能不安全。' }
-                ],
-                icon: '🕒'
-              },
-              {
-                text: '上車後，發現車廂裡人很多很擁擠，你應該怎麼做來保護自己？',
-                options: [
-                  { text: '把背包放在背後，雙手插袋', isCorrect: false, feedback: '這樣站不穩，背包也容易撞到人。' },
-                  { text: '握緊扶手，把背包改為手提或放在胸前', isCorrect: true, feedback: '非常有保護意識！這樣既安全又不會阻礙他人。' },
-                  { text: '在車廂裡走來走去', isCorrect: false, feedback: '行車時走動非常危險！' }
-                ],
-                icon: '🛡️'
-              },
-              {
-                text: '為了讓家長放心，在車上你應該用 WhatsApp 發送什麼訊息給他們？',
-                options: [
-                  { text: '發送搞笑貼圖', isCorrect: false, feedback: '貼圖很可愛，但家長更想知道你在哪裡喔。' },
-                  { text: '「我已經上車了」，並使用「分享實時位置」功能', isCorrect: true, feedback: '完美溝通！家長收到這個一定會非常安心。' },
-                  { text: '甚麼都不發', isCorrect: false, feedback: '這樣家長會因為聯絡不到你而非常擔心的！' }
-                ],
-                icon: '💬'
-              },
-              {
-                text: '順利下車步行回家，過馬路時遇到交通燈壞了（一直閃黃燈），你應該怎麼辦？',
-                options: [
-                  { text: '直接跑過去', isCorrect: false, feedback: '絕對不可以！司機可能沒看到你。' },
-                  { text: '使用附近的行人天橋，或找其他正常的斑馬線', isCorrect: true, feedback: '安全意識極佳！寧願走遠一點點，也絕對不冒險過危險的馬路。' },
-                  { text: '跟著路上的汽車一起走', isCorrect: false, feedback: '人車爭路是非常危險的行為！' }
-                ],
-                icon: '⚠️'
-              }
+            title: "📚 忘記帶功課事件",
+            sentences: [
+              { text: "早上回到學校，準備交功課時", stepIndex: 0 },
+              { text: "我翻遍了書包，發現自己忘記帶中文功課", stepIndex: 1 },
+              { text: "我覺得很害怕，擔心會被老師責罵", stepIndex: 2 },
+              { text: "我誠實地向老師承認錯誤，並保證明天一定會補交", stepIndex: 3 },
+              { text: "老師原諒了我，我學會了每晚都要檢查書包", stepIndex: 4 }
+            ]
+          },
+          {
+            title: "⚽ 同學爭執事件",
+            sentences: [
+              { text: "小息時在操場上", stepIndex: 0 },
+              { text: "我和同學為了一個足球誰先踢而吵了起來", stepIndex: 1 },
+              { text: "我覺得很生氣，也覺得對方很不講理", stepIndex: 2 },
+              { text: "我深呼吸冷靜下來，並提議我們輪流踢", stepIndex: 3 },
+              { text: "我們和好如初，我學會了遇到衝突時要互相禮讓", stepIndex: 4 }
+            ]
+          },
+          {
+            title: "📝 測驗失準事件",
+            sentences: [
+              { text: "在課室裡派發數學測驗卷的時候", stepIndex: 0 },
+              { text: "我發現自己只拿了不合格的分數", stepIndex: 1 },
+              { text: "我覺得很難過，也很擔心回家會被父母責備", stepIndex: 2 },
+              { text: "我主動找老師請問錯在哪裡，並決心下次更認真溫習", stepIndex: 3 },
+              { text: "老師稱讚了我的學習態度，我明白了失敗乃成功之母", stepIndex: 4 }
+            ]
+          },
+          {
+            title: "🎤 舞台表演事件",
+            sentences: [
+              { text: "在學校舉辦周年才藝表演的舞台上", stepIndex: 0 },
+              { text: "輪到我出場唱歌，但我突然忘記了歌詞", stepIndex: 1 },
+              { text: "我當時緊張得心跳加速，腦袋一片空白", stepIndex: 2 },
+              { text: "我看著台下老師鼓勵的眼神，跟著音樂節奏繼續哼唱", stepIndex: 3 },
+              { text: "觀眾給了我熱烈的掌聲，我學到了遇到突發情況要保持鎮定", stepIndex: 4 }
+            ]
+          },
+          {
+            title: "🔍 遺失物品事件",
+            sentences: [
+              { text: "放學後在學校圖書館裡", stepIndex: 0 },
+              { text: "我找不到我的八達通卡，不能搭車回家", stepIndex: 1 },
+              { text: "我急得快要哭出來，不知道該怎麼辦才好", stepIndex: 2 },
+              { text: "我走到校務處，請職員幫忙打電話給家人", stepIndex: 3 },
+              { text: "家人很快來接我，我學會了東西要收拾好並放在固定的位置", stepIndex: 4 }
             ]
           }
         ];
 
+        // --- 主要應用程式元件 ---
         function App() {
-          const [currentScreen, setCurrentScreen] = useState('home'); 
-          const [selectedMission, setSelectedMission] = useState(null);
-          const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-          const [completedMissions, setCompletedMissions] = useState([]);
-          const [feedback, setFeedback] = useState(null); 
+          const [gameState, setGameState] = useState('welcome');
+          const [score, setScore] = useState(0);
 
-          const startGame = () => setCurrentScreen('menu');
-
-          const selectMission = (mission) => {
-            setSelectedMission(mission);
-            setCurrentScreen('briefing');
-          };
-
-          const startMission = () => {
-            setCurrentQuestionIndex(0);
-            setFeedback(null);
-            setCurrentScreen('playing');
-          };
-
-          const handleAnswer = (option) => {
-            if (option.isCorrect) {
-              setFeedback({ type: 'success', message: option.feedback });
-              setTimeout(() => {
-                setFeedback(null);
-                if (currentQuestionIndex < selectedMission.questions.length - 1) {
-                  setCurrentQuestionIndex(prev => prev + 1);
-                } else {
-                  if (!completedMissions.includes(selectedMission.id)) {
-                    setCompletedMissions([...completedMissions, selectedMission.id]);
-                  }
-                  setCurrentScreen('success');
-                }
-              }, 2500);
-            } else {
-              setFeedback({ type: 'error', message: option.feedback });
-              setTimeout(() => setFeedback(null), 2500);
+          const renderScreen = () => {
+            switch (gameState) {
+              case 'welcome': return <WelcomeScreen onNext={() => setGameState('step-order')} />;
+              case 'step-order': return <StepOrderGame onNext={() => setGameState('scenarios')} />;
+              case 'scenarios': return <ScenariosGame onNext={() => setGameState('criteria')} score={score} setScore={setScore} />;
+              case 'criteria': return <CriteriaScreen onNext={() => setGameState('end')} />;
+              case 'end': return <EndScreen score={score} onRestart={() => { setGameState('welcome'); setScore(0); }} />;
+              default: return <WelcomeScreen onNext={() => setGameState('step-order')} />;
             }
           };
 
-          const returnToMenu = () => {
-            setSelectedMission(null);
-            setCurrentScreen('menu');
-          };
-
           return (
-            <div className="min-h-screen flex items-center justify-center p-2 sm:p-4 text-gray-800">
-              <div className="w-full max-w-md bg-white sm:rounded-3xl shadow-2xl overflow-hidden border-0 sm:border-4 border-gray-800 relative h-screen sm:h-[800px] sm:max-h-[90vh] flex flex-col">
-                
-                {/* 狀態列 */}
-                <div className="bg-gray-800 text-white px-4 py-2 text-xs flex justify-between items-center hidden sm:flex">
-                  <span>100% 🔋</span>
-                  <span className="font-bold tracking-wider">特工通訊設備</span>
-                  <span>5G 📶</span>
+            <div className="min-h-screen p-4 md:p-8 flex items-center justify-center">
+              <div className="max-w-3xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-orange-200 relative">
+                <div className="bg-orange-500 text-white p-6 text-center relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+                  <h1 className="text-3xl md:text-4xl font-bold relative z-10 flex items-center justify-center gap-3">
+                    <IconBookOpen />
+                    宇豐的表達事件簿
+                  </h1>
+                  <p className="text-orange-100 mt-2 text-lg relative z-10">2V班 (10) 甘宇豐 專屬訓練場</p>
                 </div>
-
-                <div className="flex-1 overflow-y-auto bg-slate-50 relative no-scrollbar">
-                  
-                  {/* 首頁 */}
-                  {currentScreen === 'home' && (
-                    <div className="min-h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-blue-100 to-white">
-                      <div className="text-7xl mb-6 animate-bounce">🧭</div>
-                      <h1 className="text-4xl font-black text-gray-800 mb-2">新界西<br/>交通特工</h1>
-                      <p className="text-gray-600 mb-8 font-medium">宇豐專屬：路線規劃與方向感訓練系統</p>
-                      
-                      <button onClick={startGame} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-2xl py-4 px-12 rounded-full shadow-lg transition-transform transform hover:scale-105 active:scale-95">
-                        登入系統
-                      </button>
-                    </div>
-                  )}
-
-                  {/* 任務選單 */}
-                  {currentScreen === 'menu' && (
-                    <div className="p-6 min-h-full">
-                      <div className="flex items-center justify-between mb-8 mt-4">
-                        <h2 className="text-2xl font-black text-gray-800">特工任務列表</h2>
-                        <div className="flex items-center space-x-1 text-sm font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full shadow-sm">
-                          <span>🏆 徽章: {completedMissions.length}/3</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        {missionsData.map(mission => (
-                          <button
-                            key={mission.id}
-                            onClick={() => selectMission(mission)}
-                            className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center shadow-sm hover:shadow-md ${mission.color} ${completedMissions.includes(mission.id) ? 'opacity-70 bg-gray-100 border-gray-300' : 'hover:-translate-y-1'}`}
-                          >
-                            <div className="text-4xl mr-4 bg-white p-2 rounded-full shadow-sm">
-                              {mission.icon}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-bold text-lg text-gray-800">{mission.title}</h3>
-                              <p className="text-sm text-gray-700 font-medium">目的地：{mission.destination}</p>
-                            </div>
-                            {completedMissions.includes(mission.id) ? (
-                              <div className="text-green-600 text-3xl">✅</div>
-                            ) : (
-                              <div className="text-gray-400 text-2xl">➡️</div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      {completedMissions.length === 3 && (
-                        <div className="mt-8 p-6 bg-yellow-100 border-2 border-yellow-400 rounded-2xl text-center animate-pulse shadow-md">
-                          <div className="text-5xl mb-2">🏆</div>
-                          <h3 className="font-black text-2xl text-yellow-800 mb-1">恭喜宇豐！</h3>
-                          <p className="text-yellow-800 font-medium">你已獲得「新界西交通大師」稱號！<br/>現在可以在現實生活中挑戰了！</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 任務簡報 */}
-                  {currentScreen === 'briefing' && selectedMission && (
-                    <div className="min-h-full flex flex-col p-6 bg-slate-800 text-white">
-                      <div className="flex-1 flex flex-col items-center justify-center text-center mt-8">
-                        <div className="text-6xl mb-6 bg-slate-700 p-4 rounded-full border-4 border-slate-600 shadow-xl">
-                          {selectedMission.icon}
-                        </div>
-                        <h2 className="text-3xl font-black mb-2 text-blue-300 tracking-wider">任務簡報</h2>
-                        <h3 className="text-2xl font-bold mb-8 text-white">{selectedMission.title}</h3>
-                        
-                        <div className="bg-slate-700 p-6 rounded-2xl border border-slate-600 w-full mb-8 shadow-inner">
-                          <p className="text-lg leading-relaxed text-slate-200 text-left font-medium">
-                            {selectedMission.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 pb-6">
-                        <button onClick={startMission} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xl py-4 rounded-xl shadow-lg transition-transform transform active:scale-95 flex justify-center items-center">
-                          開始規劃路線 ➡️
-                        </button>
-                        <button onClick={returnToMenu} className="w-full bg-slate-700 hover:bg-slate-600 text-gray-300 font-bold text-lg py-3 rounded-xl transition-colors">
-                          返回選單
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 遊戲進行中 */}
-                  {currentScreen === 'playing' && selectedMission && (
-                    <div className="flex flex-col min-h-full bg-white relative">
-                      <div className="h-3 bg-gray-200 w-full sticky top-0 z-10">
-                        <div 
-                          className="h-full bg-blue-500 transition-all duration-500 ease-out"
-                          style={{ width: `${((currentQuestionIndex + 1) / selectedMission.questions.length) * 100}%` }}
-                        ></div>
-                      </div>
-
-                      <div className="flex-1 p-6 pb-32">
-                        <div className="flex items-center justify-between mb-8">
-                          <span className="text-sm font-black text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
-                            問題 {currentQuestionIndex + 1} / {selectedMission.questions.length}
-                          </span>
-                          <button onClick={returnToMenu} className="text-sm text-blue-500 font-bold underline px-2 py-1">
-                            放棄任務
-                          </button>
-                        </div>
-
-                        <div className="flex justify-center mb-6">
-                          <div className="text-6xl p-4 bg-blue-50 rounded-full shadow-sm">
-                            {selectedMission.questions[currentQuestionIndex].icon}
-                          </div>
-                        </div>
-
-                        <h3 className="text-2xl font-black text-gray-800 mb-8 leading-snug">
-                          {selectedMission.questions[currentQuestionIndex].text}
-                        </h3>
-
-                        <div className="space-y-4">
-                          {selectedMission.questions[currentQuestionIndex].options.map((option, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => handleAnswer(option)}
-                              disabled={feedback !== null}
-                              className="w-full text-left p-5 rounded-2xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 active:bg-blue-100 transition-all font-bold text-lg text-gray-700 disabled:opacity-50 shadow-sm"
-                            >
-                              {option.text}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* 回饋視窗 */}
-                      {feedback && (
-                        <div className="absolute inset-x-0 bottom-0 p-4 animate-slide-up z-20">
-                          <div className={`p-6 rounded-3xl shadow-2xl flex items-start space-x-4 ${feedback.type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`}>
-                            <div className="text-4xl flex-shrink-0">
-                              {feedback.type === 'success' ? '✅' : '❌'}
-                            </div>
-                            <div>
-                              <h4 className="font-black text-xl mb-1">
-                                {feedback.type === 'success' ? '非常好！' : '哎呀！'}
-                              </h4>
-                              <p className="text-base font-medium leading-tight">{feedback.message}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 任務成功 */}
-                  {currentScreen === 'success' && (
-                    <div className="min-h-full flex flex-col items-center justify-center p-6 text-center bg-green-50">
-                      <div className="text-7xl mb-6 bg-green-200 p-6 rounded-full border-4 border-green-400 shadow-lg relative animate-bounce">
-                        🏆
-                      </div>
-                      
-                      <h2 className="text-4xl font-black text-green-800 mb-4">路線規劃成功！</h2>
-                      <p className="text-xl text-green-700 mb-10 font-bold px-2 leading-relaxed">
-                        宇豐，你已經掌握了前往<br/><span className="text-2xl text-green-900 bg-green-200 px-2 py-1 rounded mt-2 inline-block">「{selectedMission.destination}」</span><br/>的方法。下次出門時，換你來帶路喔！
-                      </p>
-                      
-                      <button onClick={returnToMenu} className="bg-green-600 hover:bg-green-700 text-white font-black text-2xl py-4 px-12 rounded-full shadow-xl transition-transform transform hover:scale-105 active:scale-95">
-                        返回基地
-                      </button>
-                    </div>
-                  )}
-
+                <div className="p-6 md:p-10 min-h-[400px]">
+                  {renderScreen()}
                 </div>
               </div>
+            </div>
+          );
+        }
+
+        // --- 畫面 1：歡迎畫面 ---
+        function WelcomeScreen({ onNext }) {
+          return (
+            <div className="text-center animate-fade-in-up">
+              <div className="inline-block p-6 bg-yellow-100 rounded-full mb-6">
+                <IconStar size={64} className="text-yellow-500 animate-pulse" />
+              </div>
+              <h2 className="text-2xl font-bold mb-4 text-slate-700">準備好接受挑戰了嗎？</h2>
+              <p className="text-lg text-slate-600 mb-8 leading-relaxed max-w-lg mx-auto">
+                這個訓練場會幫助你熟練地運用「表達框架五步曲」。
+                你可以重複練習，直到完全掌握為止！
+                記住我們的口號：<strong className="text-orange-600">I can do this!</strong>
+              </p>
+              <button onClick={onNext} className="bg-orange-500 hover:bg-orange-600 text-white text-xl font-bold py-4 px-10 rounded-full shadow-lg transform transition hover:scale-105 active:scale-95 flex items-center gap-2 mx-auto">
+                開始挑戰 <IconChevronRight />
+              </button>
+            </div>
+          );
+        }
+
+        // --- 畫面 2：五步曲重組 ---
+        function StepOrderGame({ onNext }) {
+          const [shuffledSteps, setShuffledSteps] = useState([]);
+          const [correctCount, setCorrectCount] = useState(0);
+          const [errorIndex, setErrorIndex] = useState(null);
+
+          useEffect(() => {
+            const shuffled = [...FRAMEWORK_STEPS].map((step, i) => ({ step, originalIndex: i }))
+                                                 .sort(() => Math.random() - 0.5);
+            setShuffledSteps(shuffled);
+          }, []);
+
+          const handleStepClick = (item, currentIndex) => {
+            if (item.originalIndex === correctCount) {
+              setCorrectCount(prev => prev + 1);
+              setErrorIndex(null);
+            } else {
+              setErrorIndex(currentIndex);
+              setTimeout(() => setErrorIndex(null), 800);
+            }
+          };
+
+          const isComplete = correctCount === FRAMEWORK_STEPS.length;
+
+          return (
+            <div className="flex flex-col items-center">
+              <h2 className="text-2xl font-bold mb-2 text-orange-600">第一關：五步曲重組</h2>
+              <p className="text-slate-600 mb-6">請按照正確的順序，依次點擊下方的按鈕。（答錯可以重新點擊！）</p>
+
+              <div className="w-full max-w-md bg-slate-50 p-4 rounded-xl mb-6 min-h-[250px] border-2 border-dashed border-slate-300">
+                <h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider text-center">正確順序</h3>
+                <div className="space-y-2">
+                  {FRAMEWORK_STEPS.map((step, index) => (
+                    <div key={index} className={`p-3 rounded-lg border-2 transition-all duration-500 flex items-center gap-3 ${index < correctCount ? 'bg-green-100 border-green-500 text-green-800 scale-100 opacity-100' : 'bg-slate-100 border-transparent text-slate-400 scale-95 opacity-50'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${index < correctCount ? 'bg-green-500 text-white' : 'bg-slate-300 text-slate-500'}`}>
+                        {index + 1}
+                      </div>
+                      {index < correctCount ? step : '等待填入...'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {!isComplete && (
+                <div className="flex flex-wrap justify-center gap-3 max-w-lg">
+                  {shuffledSteps.map((item, index) => {
+                    if (item.originalIndex < correctCount) return null;
+                    return (
+                      <button key={index} onClick={() => handleStepClick(item, index)} className={`py-2 px-4 rounded-full border-2 border-orange-400 bg-white text-orange-700 font-semibold shadow-sm hover:bg-orange-50 transition-all active:scale-95 ${errorIndex === index ? 'animate-shake bg-red-100 border-red-500 text-red-700' : ''}`}>
+                        {item.step}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {isComplete && (
+                <div className="mt-6 text-center animate-bounce">
+                  <p className="text-green-600 font-bold text-xl mb-4 flex items-center justify-center gap-2">
+                    <IconCheckCircle size={28} /> 完美！你已經記熟五步曲了！
+                  </p>
+                  <button onClick={onNext} className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-md flex items-center gap-2 mx-auto transition-transform hover:scale-105">
+                    進入實戰演練 <IconChevronRight />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // --- 畫面 3：情境配對遊戲 ---
+        function ScenariosGame({ onNext, score, setScore }) {
+          const [currentScenarioIdx, setCurrentScenarioIdx] = useState(0);
+          const [currentStepIdx, setCurrentStepIdx] = useState(0);
+          const [shuffledSentences, setShuffledSentences] = useState([]);
+          const [feedback, setFeedback] = useState({ show: false, isCorrect: false, msg: '' });
+
+          const scenario = SCENARIOS[currentScenarioIdx];
+
+          useEffect(() => {
+            if (scenario) {
+              const shuffled = [...scenario.sentences].sort(() => Math.random() - 0.5);
+              setShuffledSentences(shuffled);
+              setCurrentStepIdx(0);
+              setFeedback({ show: false, isCorrect: false, msg: '' });
+            }
+          }, [currentScenarioIdx, scenario]);
+
+          const handleSentenceClick = (sentence) => {
+            if (sentence.stepIndex === currentStepIdx) {
+              setFeedback({ show: true, isCorrect: true, msg: '太棒了！完全正確！' });
+              setScore(prev => prev + 10);
+              setTimeout(() => {
+                setFeedback({ show: false, isCorrect: false, msg: '' });
+                if (currentStepIdx < 4) {
+                  setCurrentStepIdx(prev => prev + 1);
+                } else {
+                  if (currentScenarioIdx < SCENARIOS.length - 1) {
+                    setCurrentScenarioIdx(prev => prev + 1);
+                  } else {
+                    onNext();
+                  }
+                }
+              }, 1000);
+            } else {
+              setFeedback({ show: true, isCorrect: false, msg: '哎呀！好像不太對喔，再仔細想想這是哪一步？' });
+              setTimeout(() => setFeedback({ show: false, isCorrect: false, msg: '' }), 2000);
+            }
+          };
+
+          if (!scenario) return null;
+          const targetStepName = FRAMEWORK_STEPS[currentStepIdx];
+
+          return (
+            <div className="flex flex-col items-center w-full">
+              <div className="w-full flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-orange-600">第二關：實戰演練</h2>
+                <div className="bg-yellow-100 text-yellow-800 px-4 py-1 rounded-full font-bold flex items-center gap-1">
+                  <IconStar size={16} /> 積分: {score}
+                </div>
+              </div>
+
+              <div className="w-full bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6 text-center">
+                <span className="inline-block bg-blue-200 text-blue-800 text-xs font-bold px-2 py-1 rounded mb-2 uppercase tracking-wide">當前任務 {currentScenarioIdx + 1}/{SCENARIOS.length}</span>
+                <h3 className="text-xl font-bold text-blue-900">{scenario.title}</h3>
+              </div>
+
+              <div className="mb-6 text-center">
+                <p className="text-slate-500 font-medium mb-1">請找出屬於以下步驟的句子：</p>
+                <div className="inline-block bg-orange-500 text-white font-bold text-lg px-6 py-2 rounded-full shadow-md animate-pulse">
+                  步驟 {currentStepIdx + 1}: {targetStepName}
+                </div>
+              </div>
+
+              <div className="w-full space-y-3">
+                {shuffledSentences.map((item, idx) => {
+                  if (item.stepIndex < currentStepIdx) return null;
+                  return (
+                    <button key={idx} onClick={() => handleSentenceClick(item)} disabled={feedback.show && feedback.isCorrect} className="w-full text-left p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-400 hover:bg-orange-50 transition-all active:scale-[0.98]">
+                      {item.text}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {feedback.show && (
+                <div className={`mt-6 p-4 rounded-lg flex items-center gap-3 font-bold w-full justify-center transition-all ${feedback.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {feedback.isCorrect ? <IconCheckCircle /> : <IconXCircle />}
+                  {feedback.msg}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // --- 畫面 4：評分標準自我檢視 ---
+        function CriteriaScreen({ onNext }) {
+          const [checkedItems, setCheckedItems] = useState({ clear: false, language: false, relevant: false, nonverbal: false });
+
+          const handleCheck = (key) => setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
+          const allChecked = Object.values(checkedItems).every(val => val === true);
+
+          return (
+            <div className="flex flex-col items-center">
+              <h2 className="text-2xl font-bold mb-2 text-orange-600">第三關：評分標準我要識</h2>
+              <p className="text-slate-600 mb-6 text-center max-w-lg">在實際表達時，光有框架還不夠喔！請勾選以下你認為自己能做到的標準，給自己打打氣！</p>
+              
+              <div className="w-full max-w-md space-y-3 mb-8">
+                {[
+                  { id: 'clear', title: '表達清晰 (30%)', desc: '能完整表達自己的經驗、意見或想法，不結巴。' },
+                  { id: 'language', title: '語言運用 (30%)', desc: '我會運用擴充句子技巧（例如：「因為...所以...」）。' },
+                  { id: 'relevant', title: '內容相關性 (30%)', desc: '我分享的內容緊緊貼扣主題，不會離題。' },
+                  { id: 'nonverbal', title: '非語言表達 (10%)', desc: '說話時，我會看著對方的眼睛（良好的眼神接觸）！' }
+                ].map(item => (
+                  <label key={item.id} className={`flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all ${checkedItems[item.id] ? 'bg-green-50 border-green-500' : 'bg-white border-slate-200'}`}>
+                    <input type="checkbox" className="mt-1 w-5 h-5 text-green-600 accent-green-600" checked={checkedItems[item.id]} onChange={() => handleCheck(item.id)} />
+                    <div className="ml-3">
+                      <span className="block font-bold text-slate-800">{item.title}</span>
+                      <span className="text-sm text-slate-500">{item.desc}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <button onClick={onNext} disabled={!allChecked} className={`font-bold py-3 px-8 rounded-full shadow-md flex items-center gap-2 transition-all ${allChecked ? 'bg-orange-500 hover:bg-orange-600 text-white transform hover:scale-105' : 'bg-slate-300 text-slate-500 cursor-not-allowed'}`}>
+                {allChecked ? '我準備好了！看成績' : '請勾選所有你承諾能做到的項目'}
+              </button>
+            </div>
+          );
+        }
+
+        // --- 畫面 5：結算畫面 ---
+        function EndScreen({ score, onRestart }) {
+          return (
+            <div className="text-center animate-fade-in-up">
+              <div className="inline-block p-6 bg-green-100 rounded-full mb-4">
+                <IconAward size={80} className="text-green-500" />
+              </div>
+              <h2 className="text-3xl font-bold mb-2 text-slate-800">恭喜過關！</h2>
+              <p className="text-xl text-orange-600 font-bold mb-6 flex items-center justify-center gap-2">
+                <IconThumbsUp /> I can do this!
+              </p>
+              <div className="bg-slate-50 p-6 rounded-2xl mb-8 max-w-sm mx-auto border-2 border-slate-100 shadow-inner">
+                <p className="text-slate-500 mb-1">本次訓練總得分</p>
+                <p className="text-5xl font-black text-orange-500">{score}</p>
+                <p className="text-sm text-slate-400 mt-2">太厲害了，宇豐！你已經是表達大師了！</p>
+              </div>
+              <button onClick={onRestart} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 flex items-center gap-2 mx-auto">
+                <IconRefreshCw size={20} /> 再嘗試一次 (練習更多)
+              </button>
             </div>
           );
         }
